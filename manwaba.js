@@ -37,7 +37,7 @@ class ManWaBa extends ComicSource {
     const isWebp = src.length >= 4 && src[0] === 0x52 && src[1] === 0x49 && src[2] === 0x46 && src[3] === 0x46;
     if (isJpeg || isPng || isWebp) return buffer;
     try {
-      const key = Convert.encodeUtf8("0B6666A0-BB59-1381-B746-a0E4C9AC");
+      const key = Convert.encodeUtf8("0B6666A0-BB59-1381-B746-a0E4C9AC".substring(0, 32));
       const iv = src.slice(0, 16).buffer;
       const encrypted = src.slice(16).buffer;
       let decrypted = new Uint8Array(Convert.decryptAesCbc(encrypted, key, iv));
