@@ -17,7 +17,7 @@
     "name": "包子漫画",
     "key": "baozi",
     "url": "https://raw.githubusercontent.com/handahao666-boop/venera_comic_source/main/baozi.js",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "description": "维护版：修复长章节分页并提供多域名/图片线路。"
   },
   {
@@ -36,14 +36,14 @@
     "name": "紳士漫畫",
     "key": "wnacg",
     "url": "https://raw.githubusercontent.com/venera-app/venera-configs/main/wnacg.js",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "紳士漫畫漫畫源, 不能使用時請嘗試更換URL"
   },
   {
     "name": "ehentai",
     "key": "ehentai",
     "url": "https://raw.githubusercontent.com/venera-app/venera-configs/main/ehentai.js",
-    "version": "1.1.8"
+    "version": "1.2.0"
   },
   {
     "name": "禁漫天堂",
@@ -114,7 +114,7 @@
     "name": "Lanraragi",
     "key": "lanraragi",
     "url": "https://raw.githubusercontent.com/venera-app/venera-configs/main/lanraragi.js",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   {
     "name": "Komga",
@@ -220,7 +220,7 @@
     "name": "鸟鸟韩漫",
     "key": "private_nnhanman",
     "url": "https://raw.githubusercontent.com/Taototo/venera-comic-sources/main/sources/private/nnhanman.js",
-    "version": "1.0.2",
+    "version": "1.0.5",
     "description": "韩漫补充源；支持多个备用域名自动切换。"
   },
   {
