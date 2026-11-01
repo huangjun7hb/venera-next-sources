@@ -2,15 +2,9 @@
   {
     "name": "拷贝漫画",
     "key": "copy_manga",
-    "url": "https://raw.githubusercontent.com/venera-app/venera-configs/main/copy_manga.js",
-    "version": "1.4.2"
-  },
-  {
-    "name": "拷贝漫画",
-    "key": "copy_manga",
     "url": "https://raw.githubusercontent.com/handahao666-boop/venera_comic_source/main/copy_manga.js",
     "version": "1.6.6",
-    "description": "维护版：增强接口兼容与设备指纹重置。"
+    "description": "维护版 1.6.6；针对接口兼容与 210 错误改进。210 也可能是服务器主动限制，升级后仍需实机验证。"
   },
   {
     "name": "Komiic",
