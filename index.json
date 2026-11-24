@@ -107,8 +107,8 @@
     "name": "漫蛙吧",
     "key": "manwaba",
     "url": "https://raw.githubusercontent.com/huangjun7hb/venera-next-sources/main/manwaba.js",
-    "version": "1.0.5",
-    "description": "封面修复版：缩略图独立请求、加密图片解码和封面地址规范化；保留原有章节阅读逻辑。"
+    "version": "1.0.6",
+    "description": "封面兼容修复：支持旧封面图床切换、封面AES解码与无效图片字节检测；章节阅读保持不变。"
   },
   {
     "name": "Lanraragi",
