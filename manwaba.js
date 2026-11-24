@@ -2,7 +2,7 @@
 class ManWaBa extends ComicSource {
   name = "漫蛙吧";
   key = "manwaba";
-  version = "1.0.4";
+  version = "1.0.5";
   minAppVersion = "1.4.0";
   url = "https://raw.githubusercontent.com/huangjun7hb/venera-next-sources/main/manwaba.js";
   api = "https://mwuu.cc/api";
@@ -63,11 +63,34 @@ class ManWaBa extends ComicSource {
     return cfg;
   }
 
+  // Covers may come from a CDN distinct from chapter pages (ce.mwzu.cc).
+  // Preserve the working chapter reader and process cover bytes separately.
+  normalizeCoverUrl(rawUrl) {
+    let url = String(rawUrl || "").trim();
+    if (url.startsWith("//")) url = "https:" + url;
+    else if (url.startsWith("/")) url = "https://mwuu.cc" + url;
+    else if (/^http:\/\//i.test(url)) url = url.replace(/^http:/i, "https:");
+    return url;
+  }
+
+  buildThumbnailConfig(rawUrl) {
+    return {
+      url: this.normalizeCoverUrl(rawUrl),
+      headers: {
+        "Referer": "https://mwuu.cc/",
+        "User-Agent": this.imageHeaders["User-Agent"],
+        "Accept": this.imageHeaders["Accept"],
+      },
+      // Plain JPEG/PNG/WebP pass through; encrypted CDN responses use AES.
+      onResponse: (buffer) => this.decryptMhttuImage(buffer),
+    };
+  }
+
   parseComic = (comic) => new Comic({
     id: (comic.id ?? String(comic.url || "").split("/").pop()).toString(),
     title: comic.title || "",
     subTitle: comic.author || "",
-    cover: comic.pic || comic.cover || "",
+    cover: this.normalizeCoverUrl(comic.pic || comic.cover || comic.image || ""),
     tags: String(comic.tags || "").split(",").filter(Boolean),
     description: comic.intro || comic.description || "",
     status: comic.status == 0 ? "连载中" : "已完结",
@@ -154,7 +177,7 @@ class ManWaBa extends ComicSource {
   };
 
   comic = {
-    onThumbnailLoad: (url) => this.buildImageConfig(url),
+    onThumbnailLoad: (url) => this.buildThumbnailConfig(url),
 
     loadInfo: async (id) => {
       const data = (await this.fetchJson(`${this.api}/comic/${id}`)).data;
@@ -172,7 +195,7 @@ class ManWaBa extends ComicSource {
       return new ComicDetails({
         title: String(data.title || ""),
         subTitle: String(data.author || ""),
-        cover: data.cover || data.pic || "",
+        cover: this.normalizeCoverUrl(data.cover || data.pic || data.image || ""),
         tags: {
           类型: String(data.tags || "").split(",").filter(Boolean),
           状态: [data.status == 0 ? "连载中" : "已完结"],
