@@ -2,7 +2,7 @@
 class ManWaBa extends ComicSource {
   name = "漫蛙吧";
   key = "manwaba";
-  version = "1.0.6";
+  version = "1.0.7";
   minAppVersion = "1.4.0";
   url = "https://raw.githubusercontent.com/huangjun7hb/venera-next-sources/main/manwaba.js";
   api = "https://mwuu.cc/api";
@@ -238,14 +238,49 @@ class ManWaBa extends ComicSource {
 
     loadEp: async (comicId, epId) => {
       const imgApi = `${this.api}/comic/image/${epId}`;
-      const params = { page: 1, pageSize: 1, imageSource: "https://tu.mhttu.cc" };
-      const first = await this.fetchJson(imgApi, { params });
-      const total = first.data?.pagination?.total ?? first.pagination?.total ?? 1;
-      const all = await this.fetchJson(imgApi, {
-        params: { ...params, pageSize: total },
-      });
-      const imageList = all.data?.images || all.images || [];
-      const images = imageList.map((item) => typeof item === "string" ? item : item?.url).filter(Boolean);
+      // Backend expects snake_case; camelCase silently returns its default page.
+      const pageSize = 100;
+      const baseParams = { page_size: pageSize, image_source: "https://tu.mhttu.cc" };
+      const first = await this.fetchJson(imgApi, { params: { ...baseParams, page: 1 } });
+      const firstData = first.data || first;
+      const firstPage = firstData.images || [];
+      const pagination = firstData.pagination || first.pagination || {};
+      const total = Number(pagination.total);
+      if (!Array.isArray(firstPage) || firstPage.length === 0 ||
+          !Number.isSafeInteger(total) || total < firstPage.length) {
+        throw new Error("漫蛙章节图片数量异常，请提供日志检查分页接口。");
+      }
+      // A mirror may cap the effective page size below the requested limit.
+      const declaredSize = Number(pagination.size);
+      const effectiveSize = Math.min(
+        firstPage.length,
+        Number.isSafeInteger(declaredSize) && declaredSize > 0 ? declaredSize : pageSize,
+      );
+      const maxPages = Math.ceil(total / effectiveSize);
+      if (maxPages > 120) throw new Error("漫蛙章节图片分页异常：页数过多。");
+      const images = [];
+      const seen = new Set();
+      const append = (list) => {
+        if (!Array.isArray(list) || list.length === 0) {
+          throw new Error("漫蛙章节分页返回空图片列表。");
+        }
+        for (const item of list) {
+          const url = typeof item === "string" ? item : (item?.url || item?.pic || item?.image);
+          if (typeof url !== "string" || !url.trim() || seen.has(url)) {
+            throw new Error("漫蛙章节分页存在无效或重复图片。");
+          }
+          seen.add(url);
+          images.push(url);
+        }
+      };
+      append(firstPage);
+      for (let page = 2; images.length < total && page <= maxPages; page++) {
+        const res = await this.fetchJson(imgApi, { params: { ...baseParams, page } });
+        append((res.data || res).images || []);
+      }
+      if (images.length !== total) {
+        throw new Error(`漫蛙章节图片不完整：获取到 ${images.length}/${total} 张，请检查分页接口。`);
+      }
       return { images };
     },
 
