@@ -2,7 +2,7 @@
 class ManWaBa extends ComicSource {
   name = "漫蛙吧";
   key = "manwaba";
-  version = "1.0.5";
+  version = "1.0.6";
   minAppVersion = "1.4.0";
   url = "https://raw.githubusercontent.com/huangjun7hb/venera-next-sources/main/manwaba.js";
   api = "https://mwuu.cc/api";
@@ -63,14 +63,45 @@ class ManWaBa extends ComicSource {
     return cfg;
   }
 
-  // Covers may come from a CDN distinct from chapter pages (ce.mwzu.cc).
-  // Preserve the working chapter reader and process cover bytes separately.
+  // Use the site image host for cover paths reported by older CDN URLs.
+  // This applies only to covers; working chapter-image requests stay unchanged.
   normalizeCoverUrl(rawUrl) {
     let url = String(rawUrl || "").trim();
     if (url.startsWith("//")) url = "https:" + url;
     else if (url.startsWith("/")) url = "https://mwuu.cc" + url;
     else if (/^http:\/\//i.test(url)) url = url.replace(/^http:/i, "https:");
-    return url;
+    // Mirror the /en_images/ cover path on the site's image host.
+    return url.replace(
+      /^https:\/\/(?:ce\.mwzu\.cc|mwtuyi\.cc|tu\.mhttu\.cc)(\/en_images\/[^?#]+(?:[?#].*)?)$/i,
+      "https://tu.mwzu.cc$1"
+    );
+  }
+
+  isImageBytes(bytes) {
+    if (bytes.length < 8) return false;
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return true;
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return true;
+    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return true;
+    // AVIF/HEIF start with ISO-BMFF ftyp instead of JPEG/WebP magic.
+    if (bytes.length >= 16 && bytes[4] === 0x66 && bytes[5] === 0x74 &&
+        bytes[6] === 0x79 && bytes[7] === 0x70) return true;
+    return false;
+  }
+
+  decodeThumbnail(buffer) {
+    const input = new Uint8Array(buffer);
+    if (this.isImageBytes(input)) return buffer;
+    if (input.length < 32 || (input.length - 16) % 16 !== 0) {
+      throw new Error("漫蛙封面响应不是图片或AES密文：长度=" + input.length);
+    }
+    const decoded = this.decryptMhttuImage(buffer);
+    if (!this.isImageBytes(new Uint8Array(decoded))) {
+      // Throw before Venera caches invalid data as a valid cover.
+      throw new Error("漫蛙封面解密后不是图片；请检查图床域名或缓存。");
+    }
+    return decoded;
   }
 
   buildThumbnailConfig(rawUrl) {
@@ -81,8 +112,7 @@ class ManWaBa extends ComicSource {
         "User-Agent": this.imageHeaders["User-Agent"],
         "Accept": this.imageHeaders["Accept"],
       },
-      // Plain JPEG/PNG/WebP pass through; encrypted CDN responses use AES.
-      onResponse: (buffer) => this.decryptMhttuImage(buffer),
+      onResponse: (buffer) => this.decodeThumbnail(buffer),
     };
   }
 
